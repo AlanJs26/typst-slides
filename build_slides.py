@@ -17,7 +17,7 @@ import subprocess
 from jinja2 import Environment, select_autoescape
 
 try:
-    from touying import to_html
+    from touying import to_html, to_pdf
 except ImportError:
     to_html = None  # Set to None if touying is not available
 
@@ -100,10 +100,12 @@ def compile_slides():
 
             typ_file_path = os.path.join(dirpath, SLIDES_FILENAME)
             html_file_path = os.path.join(dirpath, "main.html")
+            pdf_file_path = os.path.join(dirpath, "main.pdf")
 
             try:
                 # Usa a função touying.to_html() diretamente
                 to_html(typ_file_path, output=html_file_path)
+                to_pdf(typ_file_path, output=pdf_file_path)
                 print(" -> Compilado com sucesso.")
 
                 # Armazena o caminho relativo para o dashboard
@@ -149,7 +151,9 @@ def create_dashboard(slides_list):
         print(f"Dashboard '{OUTPUT_FILENAME}' criado com sucesso.")
 
     except ImportError:
-        print(" -> ERRO: Biblioteca 'jinja2' não encontrada. Certifique-se de que as dependências do script estão configuradas corretamente para o 'uv'.")
+        print(
+            " -> ERRO: Biblioteca 'jinja2' não encontrada. Certifique-se de que as dependências do script estão configuradas corretamente para o 'uv'."
+        )
     except Exception as e:
         print(f" -> Erro ao criar o dashboard: {e}")
 

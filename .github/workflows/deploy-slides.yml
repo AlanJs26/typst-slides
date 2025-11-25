@@ -5,9 +5,9 @@ on:
     branches:
       - main
     paths:
-      - '**/*.typ'
-      - 'build_slides.py'
-      - '.github/workflows/deploy-slides.yml'
+      - "**/*.typ"
+      - "build_slides.py"
+      - ".github/workflows/deploy-slides.yml"
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -79,7 +79,7 @@ jobs:
           test -f "index.html" || (echo "index.html dashboard not found" && exit 1)
           cp index.html _site/
           # Copy all directories containing main.html (compiled slides)
-          find . -name "main.html" -not -path "./_site/*" | while read html_file; do
+          find . -not -path "./_site/*" -name "main.pdf" -name "main.html" | while read html_file; do
             dir=$(dirname "$html_file")
             # Skip root directory if any
             if [ "$dir" != "." ]; then
