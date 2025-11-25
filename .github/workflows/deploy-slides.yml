@@ -79,7 +79,7 @@ jobs:
           test -f "index.html" || (echo "index.html dashboard not found" && exit 1)
           cp index.html _site/
           # Copy all directories containing main.html (compiled slides)
-          find . -not -path "./_site/*" -name "main.pdf" -name "main.html" | while read html_file; do
+          find . -not -path "./_site/*" -and \( -name "main.pdf" -or -name "main.html" \) | while read html_file; do
             dir=$(dirname "$html_file")
             # Skip root directory if any
             if [ "$dir" != "." ]; then
