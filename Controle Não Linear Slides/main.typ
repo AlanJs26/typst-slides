@@ -3,7 +3,7 @@
 
 #show: university-theme.with(
   aspect-ratio: "16-9",
-  nusp: ([13695956], [32165464532]),
+  nusp: ([13695956], [13683622]),
   config-info(
     title: [Navegação Autônoma com Controle Preditivo (MPC)],
     subtitle: [Controle Não Linear],
