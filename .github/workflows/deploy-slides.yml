@@ -1,0 +1,102 @@
+name: Build and Deploy Slides
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.typ'
+      - 'build_slides.py'
+      - '.github/workflows/deploy-slides.yml'
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+env:
+  TYPST_VERSION: "0.14.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Barlow font
+        run: |
+          mkdir -p ~/.local/share/fonts
+          cd ~/.local/share/fonts
+          # Install essential font variants (fail if these don't download)
+          for variant in Regular Bold Italic BoldItalic; do
+            wget -q https://github.com/google/fonts/raw/main/ofl/barlow/Barlow-${variant}.ttf
+          done
+          # Install additional variants (optional)
+          for variant in Medium SemiBold Light ExtraLight Black ExtraBold; do
+            wget -q https://github.com/google/fonts/raw/main/ofl/barlow/Barlow-${variant}.ttf || echo "Optional variant $variant not available"
+          done
+          fc-cache -f
+          # Verify at least the core fonts were installed
+          fc-list | grep -i barlow || (echo "ERROR: Barlow fonts not found after installation" && exit 1)
+
+      - name: Install Noto Sans font
+        run: |
+          cd ~/.local/share/fonts
+          # Install Noto Sans variable fonts (contain all weights in one file)
+          wget -q https://github.com/google/fonts/raw/main/ofl/notosans/NotoSans%5Bwdth%2Cwght%5D.ttf -O NotoSans-Variable.ttf
+          wget -q https://github.com/google/fonts/raw/main/ofl/notosans/NotoSans-Italic%5Bwdth%2Cwght%5D.ttf -O NotoSans-Italic-Variable.ttf
+          fc-cache -f
+          # Verify Noto Sans fonts were installed
+          fc-list | grep -i "noto sans" || (echo "ERROR: Noto Sans fonts not found after installation" && exit 1)
+
+      - name: Install Typst
+        run: |
+          wget -q https://github.com/typst/typst/releases/download/v${{ env.TYPST_VERSION }}/typst-x86_64-unknown-linux-musl.tar.xz
+          tar -xf typst-x86_64-unknown-linux-musl.tar.xz
+          sudo mv typst-x86_64-unknown-linux-musl/typst /usr/local/bin/
+          typst --version
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Build all slides with build_slides.py
+        run: uv run build_slides.py
+
+      - name: Prepare deployment directory
+        run: |
+          set -e
+          mkdir -p _site
+          # Copy the generated index.html dashboard
+          test -f "index.html" || (echo "index.html dashboard not found" && exit 1)
+          cp index.html _site/
+          # Copy all directories containing main.html (compiled slides)
+          find . -name "main.html" -not -path "./_site/*" | while read html_file; do
+            dir=$(dirname "$html_file")
+            # Skip root directory if any
+            if [ "$dir" != "." ]; then
+              cp -r "$dir" _site/
+            fi
+          done
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
